@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Which Sea Creature Are You?{% endblock %}
+{% block content %}
+<h2>Which Sea Creature Are You?</h2>
+<p>Answer a few fun questions to discover your OctoFit house!</p>
+<form id="quiz-form">
+  <div>
+    <label>1. What’s your workout vibe?</label><br>
+    <select name="q1" required>
+      <option value="">Choose...</option>
+      <option value="Strong and powerful">Strong and powerful</option>
+      <option value="Fast and competitive">Fast and competitive</option>
+      <option value="Calm and steady">Calm and steady</option>
+      <option value="Playful and social">Playful and social</option>
+    </select>
+  </div>
+  <div>
+    <label>2. Pick a favorite activity:</label><br>
+    <select name="q2" required>
+      <option value="">Choose...</option>
+      <option value="Weightlifting">Weightlifting</option>
+      <option value="Sprinting">Sprinting</option>
+      <option value="Yoga">Yoga</option>
+      <option value="Dance">Dance</option>
+    </select>
+  </div>
+  <div>
+    <label>3. What motivates you most?</label><br>
+    <select name="q3" required>
+      <option value="">Choose...</option>
+      <option value="Winning">Winning</option>
+      <option value="Consistency">Consistency</option>
+      <option value="Fun with friends">Fun with friends</option>
+      <option value="Getting stronger">Getting stronger</option>
+    </select>
+  </div>
+  <button type="submit">Find My House</button>
+</form>
+<div id="quiz-result" style="margin-top:1.5em;"></div>
+<script>
+document.getElementById('quiz-form').onsubmit = function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const answers = {
+    q1: form.q1.value,
+    q2: form.q2.value,
+    q3: form.q3.value
+  };
+  fetch("/personality-quiz/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": '{{ csrf_token }}'
+    },
+    body: JSON.stringify({answers})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.house) {
+      document.getElementById('quiz-result').innerHTML = `<b>You’ve been sorted into <span style='color:#1976d2;'>${data.house}</span>!</b><br><em>${data.reason}</em>`;
+    } else {
+      document.getElementById('quiz-result').textContent = data.error || 'Could not assign house.';
+    }
+  })
+  .catch(() => {
+    document.getElementById('quiz-result').textContent = 'Error connecting to server.';
+  });
+};
+</script>
+{% endblock %}

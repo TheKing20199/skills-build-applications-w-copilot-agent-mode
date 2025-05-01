@@ -14,6 +14,12 @@
 
 <div id="activity-feedback" class="feedback" style="display:none;"></div>
 
+{% if coaching_msg %}
+  <div style="background:#e3f7fc;border:1px solid #4fc3f7;border-radius:8px;padding:1em 1.2em;margin-bottom:1.2em;font-size:1.1em;">
+    <b>OctoCoach says:</b> <span>{{ coaching_msg }}</span>
+  </div>
+{% endif %}
+
 {% if recommendations %}
 <div class="recommendations dynamic-contrast" title="Personalized workout suggestions for you!">
     <h2>Recommended for You</h2>

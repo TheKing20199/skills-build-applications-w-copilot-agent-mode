@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import fitness_home, submit_activity, accept_challenge, complete_challenge, suggest_challenge
+from .views import fitness_home, submit_activity, accept_challenge, complete_challenge, suggest_challenge, personality_quiz
 from . import views
 
 urlpatterns = [
@@ -9,4 +9,5 @@ urlpatterns = [
     path('complete-challenge/', complete_challenge, name='complete_challenge'),
     path('suggest-challenge/', suggest_challenge, name='suggest_challenge'),
     path('friends/', views.friends, name='friends'),
+    path('personality-quiz/', personality_quiz, name='personality_quiz'),
 ]

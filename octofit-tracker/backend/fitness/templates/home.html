@@ -4,6 +4,13 @@
 <h1>Welcome to OctoFit!</h1>
 <a href="/submit-activity/" class="log-activity-btn" style="display:inline-block;background:#1976d2;color:#fff;padding:0.7em 1.5em;border-radius:8px;font-size:1.1em;margin-bottom:1.5em;text-decoration:none;">➕ Log Activity</a>
 
+{% if user.is_authenticated and onboarding_journey_msg %}
+  <div style="background:#e3f7fc;border:1px solid #4fc3f7;border-radius:8px;padding:1em 1.2em;margin-bottom:1.2em;font-size:1.1em;">
+    <b>Welcome to your OctoFit journey!</b><br>
+    <span>{{ onboarding_journey_msg }}</span>
+  </div>
+{% endif %}
+
 {# Show OctoCoach message if present #}
 {% if octocoach_message %}
   <div id="octocoach-auto-message" style="background:#e3f7fc;border-left:5px solid #4fc3f7;padding:1em 1.5em;margin-bottom:1.5em;border-radius:8px;font-size:1.1em;">

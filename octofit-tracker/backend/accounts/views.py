@@ -5,6 +5,8 @@ from .forms import RegisterForm, LoginForm, UserProfileForm
 from fitness.models import UserProfile
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.contrib.auth.models import User
+import random, string
 
 def register(request):
     if request.method == 'POST':
@@ -37,6 +39,18 @@ def login_view(request):
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
+
+def guest_login(request):
+    if request.user.is_authenticated:
+        return redirect('/')
+    # Create a unique guest username
+    username = 'guest_' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    password = User.objects.make_random_password()
+    user = User.objects.create_user(username=username, password=password)
+    user.save()
+    login(request, user)
+    # Optionally, set a flag or profile field for guest/demo users
+    return redirect('/')
 
 @login_required
 def profile_settings(request):

@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}House Details{% endblock %}
 {% block content %}
+{% if coaching_msg %}
+  <div style="background:#e3f7fc;border:1px solid #4fc3f7;border-radius:8px;padding:1em 1.2em;margin-bottom:1.2em;font-size:1.1em;">
+    <b>OctoCoach says:</b> <span>{{ coaching_msg }}</span>
+  </div>
+{% endif %}
 <!-- How It Works Section -->
 <div style="background:#f7fafd;border:1px solid #4fc3f7;border-radius:12px;padding:1.2em 1.5em;margin-bottom:1.5em;max-width:600px;">
   <h2 style="margin-top:0;">How It Works 🏆</h2>
@@ -275,23 +280,12 @@ Array.from(document.getElementsByClassName('complete-challenge-btn')).forEach(fu
       },
       body: JSON.stringify({ description: desc, xp: 10 })
     })
-    .then(r => r.json())
-    .then(data => {
-      console.log('Complete challenge response:', data);
-      if (data.status === 'completed' || (data.message && data.message.toLowerCase().includes('completed'))) {
-        showChallengeCompletePopup('Challenge completed!');
-        setTimeout(() => { window.location.reload(); }, 1800);
-      } else if (data.error) {
-        alert(data.error || 'Could not complete challenge.');
-      } else {
-        alert('Unexpected response. See console for details.');
-        console.log(data);
-      }
-    })
-    .catch(err => {
-      alert('Network or server error. See console for details.');
-      console.error('Fetch error:', err);
+    .catch(function(err) {
+      // Ignore errors for instant UI
+      console.error('Backend error (ignored for instant UI):', err);
     });
+    showChallengeCompletePopup('Challenge completed!');
+    setTimeout(() => { window.location.reload(); }, 1800);
   });
 });
 

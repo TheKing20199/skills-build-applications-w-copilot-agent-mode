@@ -19,18 +19,40 @@ from datetime import date
 from django.contrib.auth.models import User
 from django.db import models
 from fitness.models import House
+import openai
 
 @csrf_exempt
 @require_POST
 @login_required
 def save_onboarding(request):
+    """
+    Save onboarding answers for the user and use GPT to generate a personalized fitness journey message.
+    The message is saved to the user profile and shown on the home page after onboarding.
+    """
     profile = request.user.userprofile
     try:
         data = json.loads(request.body)
         profile.onboarding_answers = data
         profile.onboarding_complete = True
+        # --- GPT personalized journey advice ---
+        # Calls OpenAI to generate a motivational, personalized journey message
+        import openai
+        openai.api_key = getattr(settings, 'OPENAI_API_KEY', None)
+        prompt = (
+            "You are a motivating AI fitness coach. Based on these onboarding answers, give a short, personalized fitness journey message for the user. "
+            "Be friendly, specific, and encouraging. Answers: " + str(data)
+        )
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "system", "content": prompt}]
+            )
+            journey_msg = response.choices[0].message['content']
+        except Exception as e:
+            journey_msg = "Welcome to OctoFit! Let's make your fitness journey awesome."
+        profile.onboarding_journey_msg = journey_msg
         profile.save()
-        return JsonResponse({'success': True})
+        return JsonResponse({'success': True, 'journey_msg': journey_msg})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -52,14 +74,18 @@ def octofit_home(request):
     houses = House.objects.all()
     onboarding_needed = False
     octocoach_message = None
+    onboarding_journey_msg = None
     if request.user.is_authenticated:
         onboarding_needed = not getattr(request.user.userprofile, 'onboarding_complete', False)
         # Always get the latest OctoCoach message for this user (no session cache)
         octocoach_message = get_octocoach_message_for_user(request.user)
+        if request.user.userprofile.onboarding_complete:
+            onboarding_journey_msg = getattr(request.user.userprofile, 'onboarding_journey_msg', None)
     context = {
         'houses': houses,
         'onboarding_needed': onboarding_needed,
         'octocoach_message': octocoach_message,
+        'onboarding_journey_msg': onboarding_journey_msg,
         # ...other context if needed...
     }
     return render(request, "home.html", context)
@@ -213,6 +239,10 @@ def house_detail(request, name):
 
 @login_required
 def submit_activity(request):
+    """
+    Handle activity submission. After saving, call GPT to generate a coaching prompt
+    based on the activity, streak, and house. The prompt is shown to the user for instant feedback.
+    """
     if request.method == 'POST':
         form = FitnessActivityForm(request.POST)
         if form.is_valid():
@@ -238,20 +268,41 @@ def submit_activity(request):
             workouts_this_week = FitnessActivity.objects.filter(user=request.user, date__gte=start_of_week).count()
             streak = calculate_streak(request.user)
             house_points = user_profile.house.points if user_profile.house else 0
+            # --- GPT coaching prompt ---
+            # Calls OpenAI to generate a motivating, context-aware coaching message
+            import openai
+            openai.api_key = getattr(settings, 'OPENAI_API_KEY', None)
+            prompt = (
+                f"You are an AI fitness coach. The user just logged: {activity.activity_type} for {activity.duration_minutes} min. "
+                f"Their current streak is {streak} days. House: {user_profile.house.name if user_profile.house else 'None'}. "
+                f"Give a short, motivating coaching prompt for what to try next or how to improve."
+            )
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "system", "content": prompt}]
+                )
+                coaching_msg = response.choices[0].message['content']
+            except Exception:
+                coaching_msg = None
+            request.session['coaching_msg'] = coaching_msg
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
                     'message': 'Activity submitted! You earned 10 points.',
                     'workouts_this_week': workouts_this_week,
                     'streak': streak,
-                    'house_points': house_points
+                    'house_points': house_points,
+                    'coaching_msg': coaching_msg
                 })
             recommendations = recommend_workout(activity.user)
             feedback = generate_coachbot_feedback(activity.user)
-            return render(request, 'submit_activity.html', {'form': form, 'recommendations': recommendations, 'feedback': feedback})
+            return render(request, 'submit_activity.html', {'form': form, 'recommendations': recommendations, 'feedback': feedback, 'coaching_msg': coaching_msg})
     else:
         form = FitnessActivityForm()
-    return render(request, 'submit_activity.html', {'form': form})
+    # Show coaching message if present in session
+    coaching_msg = request.session.pop('coaching_msg', None)
+    return render(request, 'submit_activity.html', {'form': form, 'coaching_msg': coaching_msg})
 
 @csrf_exempt
 def accept_challenge(request):
@@ -305,6 +356,10 @@ def accept_challenge(request):
 @csrf_exempt
 @login_required
 def complete_challenge(request):
+    """
+    Mark a challenge as complete for the user. After completion, call GPT to generate
+    a coaching prompt for what to try next or how to keep up momentum. The prompt is shown to the user.
+    """
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
     data = json.loads(request.body)
@@ -334,6 +389,23 @@ def complete_challenge(request):
         challenges = []
     accepted = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges).values_list('challenge_description', flat=True))
     completed = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges, completed_at__isnull=False).values_list('challenge_description', flat=True))
+    # --- GPT coaching prompt for challenge completion ---
+    # Calls OpenAI to generate a motivating, context-aware coaching message
+    import openai
+    openai.api_key = getattr(settings, 'OPENAI_API_KEY', None)
+    prompt = (
+        f"The user just completed the challenge: '{description}'. House: {user_profile.house.name if user_profile.house else 'None'}. "
+        f"Give a short, motivating coaching prompt for what to try next or how to keep up momentum."
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": prompt}]
+        )
+        coaching_msg = response.choices[0].message['content']
+    except Exception:
+        coaching_msg = None
+    request.session['coaching_msg'] = coaching_msg
     return JsonResponse({
         'message': 'Challenge completed! XP awarded.',
         'accepted': accepted,
@@ -341,11 +413,16 @@ def complete_challenge(request):
         'total': len(challenges),
         'done': len(completed),
         'xp': xp,
-        'status': 'completed'
+        'status': 'completed',
+        'coaching_msg': coaching_msg
     })
 
 @login_required
 def octocoach_response(request):
+    """
+    Handle OctoCoach chat requests. Uses persona-based system prompts for GPT to generate
+    fun, themed, and motivating responses based on the user's selected coach persona.
+    """
     if request.method == "POST":
         user_input = request.POST.get("message", "")
         
@@ -398,6 +475,10 @@ def octocoach_response(request):
 
 @csrf_exempt
 def ask_coachbot(request):
+    """
+    Handle direct chat requests to the OctoCoach agent. Injects real user and house context
+    into the GPT system prompt for highly personalized, context-aware responses.
+    """
     if request.method == 'POST':
         try:
             from fitness.utils.agent_logic import client
@@ -930,4 +1011,49 @@ def friends(request):
         'suggested_users': suggested_users,
         'most_active': most_active,
     })
+
+@login_required
+@csrf_exempt
+def personality_quiz(request):
+    """
+    Handle the "Which sea creature are you?" personality quiz. Uses GPT to analyze answers
+    and assign the user to a house, saving the result to their profile.
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        answers = data.get('answers')
+        if not answers:
+            return JsonResponse({'error': 'No answers provided.'}, status=400)
+        prompt = (
+            "You are a wise, fun fitness coach. Based on these answers, assign the user to one of these sea creature houses: "
+            "Kraken (strong, bold), Rayzor (fast, competitive), Serene (calm, consistent), Montana (playful, social). "
+            "Give only the house name and a short reason. Answers: " + str(answers)
+        )
+        try:
+            openai.api_key = getattr(settings, 'OPENAI_API_KEY', None)
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "system", "content": prompt}]
+            )
+            gpt_reply = response.choices[0].message['content']
+            # Parse house from GPT reply
+            house = None
+            for h in ['Kraken', 'Rayzor', 'Serene', 'Montana']:
+                if h.lower() in gpt_reply.lower():
+                    house = h
+                    break
+            if not house:
+                return JsonResponse({'error': 'Could not assign house.'}, status=400)
+            # Assign house to user
+            from .models import House, UserProfile
+            house_obj = House.objects.filter(name__iexact=house).first()
+            if not house_obj:
+                return JsonResponse({'error': 'House not found.'}, status=404)
+            profile = UserProfile.objects.get(user=request.user)
+            profile.house = house_obj
+            profile.save()
+            return JsonResponse({'house': house, 'reason': gpt_reply})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return render(request, 'fitness/personality_quiz.html')
 
