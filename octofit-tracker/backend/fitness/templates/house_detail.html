@@ -1,6 +1,85 @@
 {% extends 'base.html' %}
 {% block title %}House Details{% endblock %}
 {% block content %}
+<!-- How It Works Section -->
+<div style="background:#f7fafd;border:1px solid #4fc3f7;border-radius:12px;padding:1.2em 1.5em;margin-bottom:1.5em;max-width:600px;">
+  <h2 style="margin-top:0;">How It Works 🏆</h2>
+  <ul style="list-style:none;padding-left:0;">
+    <li>🏠 <b>Join a House:</b> Compete with friends, rack up points, and climb the leaderboard.</li>
+    <li>➕ <b>Log Activities:</b> Every workout counts—track your streaks and earn rewards.</li>
+    <li>🤖 <b>Chat with OctoCoach:</b> Get instant feedback, encouragement, and smart recommendations.</li>
+    <li>⚡ <b>Take on Challenges:</b> Accept daily/weekly challenges and help your house win.</li>
+    <li>🎉 <b>Celebrate Milestones:</b> Hit a streak? Get confetti, emojis, and badges—Arnold style!</li>
+  </ul>
+</div>
+<!-- Personalized Greeting & Motivation -->
+<div style="font-size:1.2em;margin-bottom:1em;color:#1976d2;">
+  <b>Welcome, {{ user.username }}!</b> You’re representing <b>House {{ house.name }}</b>.<br>
+  <span style="font-size:1.05em;">{{ motivational_quote }}</span>
+</div>
+<!-- Quick Stats with Tooltips -->
+<div style="display:flex;gap:2em;flex-wrap:wrap;margin-bottom:1.5em;align-items:center;">
+  <div style="min-width:120px;">
+    <b>Points <span title="Earned by logging activities and completing challenges. Help your house climb the leaderboard!">ℹ️</span>:</b>
+    <span id="house-detail-points">{{ house.points }}</span>
+  </div>
+  <div style="min-width:120px;">
+    <b>Streak <span title="Log activities on consecutive days to build your streak and unlock rewards!">ℹ️</span>:</b>
+    {{ user_streak }} days
+  </div>
+  <div style="min-width:120px;">
+    <b>Leaderboard <span title="See who’s leading your house!">ℹ️</span>:</b>
+    <a href="/leaderboard">View</a>
+  </div>
+</div>
+<!-- Progress Toward Next Goal -->
+<div style="margin-bottom:1.5em;">
+  <div style="margin-bottom:0.5em;">
+    <b>Progress:</b>
+    <div style="margin:0.3em 0 0.2em 0;">
+      <span>🏋️‍♂️ Only {{ workouts_to_streak }} more workouts to reach a 7-day streak and earn a badge!</span><br>
+      <span>🏆 Your house needs {{ points_to_lead }} more points to take the lead from {{ leading_house_name }}!</span>
+    </div>
+    <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:220px;">
+      <div style="background:linear-gradient(90deg,#4fc3f7,#81d4fa);height:100%;width:{{ workouts_progress_percent }}%;transition:width 0.5s;"></div>
+    </div>
+    <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:220px;">
+      <div style="background:linear-gradient(90deg,#81d4fa,#4fc3f7);height:100%;width:{{ streak_progress_percent }}%;transition:width 0.5s;"></div>
+    </div>
+    <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:220px;">
+      <div style="background:linear-gradient(90deg,#4fc3f7,#1976d2);height:100%;width:{{ house_points_progress_percent }}%;transition:width 0.5s;"></div>
+    </div>
+  </div>
+</div>
+<!-- Calls to Action -->
+{% if user_workouts_this_week == 0 %}
+  <div style="background:#fffbe7;border:1px solid #ffd600;border-radius:8px;padding:1em 1.2em;margin-bottom:1.2em;font-size:1.1em;">
+    <b>Start strong!</b> <a href="/submit-activity/" style="color:#1976d2;text-decoration:underline;">Log your first activity</a> to earn points for your house!
+  </div>
+{% endif %}
+{% if not challenge_progress.accepted %}
+  <div style="background:#e3f7fc;border:1px solid #4fc3f7;border-radius:8px;padding:1em 1.2em;margin-bottom:1.2em;font-size:1.1em;">
+    <b>Take on a challenge!</b> 
+    <a href="#challenges" style="color:#1976d2;text-decoration:underline;">Accept your first challenge</a>
+    {% if challenges and challenges.0 and not challenges.0.is_accepted %}
+      <button id="accept-first-challenge-btn" data-challenge-desc="{{ challenges.0.text|escapejs }}" style="margin-left:1em;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.3em 1em;cursor:pointer;">Accept Now</button>
+    {% endif %}
+    and help your house win!
+  </div>
+{% endif %}
+<!-- Visualize Achievements -->
+<h2>Achievements</h2>
+<div style="display:flex;flex-wrap:wrap;gap:1em;">
+  {% for badge in badges %}
+    <div style="background:#f7fafd;border:1px solid #4fc3f7;border-radius:8px;padding:0.7em 1.2em;min-width:120px;text-align:center;">
+      <div style="font-size:2em;">{{ badge.emoji }}</div>
+      <div style="font-weight:bold;">{{ badge.name }}</div>
+      <div style="font-size:0.95em;color:#888;">{{ badge.desc }}</div>
+      {% if badge.id in user_badge_ids %}<span style="color:green;">Unlocked ✔️</span>{% else %}<span style="color:#aaa;">Locked 🔒</span>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+
 <h1>House: {{ house.name }}</h1>
 <a href="/submit-activity/" class="log-activity-btn" style="display:inline-block;background:#1976d2;color:#fff;padding:0.7em 1.5em;border-radius:8px;font-size:1.1em;margin-bottom:1.5em;text-decoration:none;">➕ Log Activity</a>
 <p><strong>Mascot:</strong> {{ house.mascot }}</p>
@@ -27,12 +106,18 @@
 
 {# Challenges #}
 {% if challenges %}
-  <h2>House Challenges</h2>
+  <h2 id="challenges">House Challenges</h2>
   <ul>
     {% for challenge in challenges %}
       <li>
         {{ challenge.text }}
-        {% if challenge.is_completed %}<span style="color:green;">✔️</span>{% elif challenge.is_accepted %}<span style="color:orange;">(Accepted)</span>{% endif %}
+        {% if challenge.is_completed %}
+          <span style="color:green;">✔️</span>
+        {% elif challenge.is_accepted %}
+          <span style="color:orange;">(Accepted)</span>
+        {% else %}
+          <button class="accept-challenge-btn" data-challenge-desc="{{ challenge.text|escapejs }}" style="margin-left:0.7em;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;font-size:0.95em;">Accept</button>
+        {% endif %}
       </li>
     {% endfor %}
   </ul>
@@ -111,6 +196,54 @@ function showHouseBadgeCelebration(text) {
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
+
+// Accept first challenge button logic
+const acceptBtn = document.getElementById('accept-first-challenge-btn');
+if (acceptBtn) {
+  acceptBtn.addEventListener('click', function() {
+    const desc = acceptBtn.getAttribute('data-challenge-desc');
+    fetch('/accept-challenge/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ description: desc, xp: 10 })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success || data.message === 'Challenge accepted!') {
+        window.location.reload();
+      } else {
+        alert(data.error || 'Could not accept challenge.');
+      }
+    });
+  });
+}
+
+// Accept any challenge button logic
+Array.from(document.getElementsByClassName('accept-challenge-btn')).forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const desc = btn.getAttribute('data-challenge-desc');
+    fetch('/accept-challenge/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ description: desc, xp: 10 })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success || data.message === 'Challenge accepted!') {
+        window.location.reload();
+      } else {
+        alert(data.error || 'Could not accept challenge.');
+      }
+    });
+  });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
   updateHouseDetail();
   checkHouseBadges();

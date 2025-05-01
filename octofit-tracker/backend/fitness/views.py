@@ -129,6 +129,18 @@ def house_detail(request, name):
     streak_progress_percent = min(100, int((user_streak / 7) * 100)) if user_streak else 0
     house_points_progress_percent = min(100, int((user_house_points / 500) * 100)) if user_house_points else 0
 
+    # Calculate workouts left to reach 7-day streak
+    workouts_to_streak = max(0, 7 - user_streak)
+
+    # Calculate points needed for house to take the lead
+    all_houses = list(House.objects.all().order_by('-points'))
+    if all_houses and all_houses[0].id != house.id:
+        points_to_lead = max(0, all_houses[0].points - house.points + 1)
+        leading_house_name = all_houses[0].name
+    else:
+        points_to_lead = 0
+        leading_house_name = house.name
+
     # Fetch house data from DB
     mascot = house.mascot
     color = house.color
@@ -181,6 +193,9 @@ def house_detail(request, name):
         "workouts_progress_percent": workouts_progress_percent,
         "streak_progress_percent": streak_progress_percent,
         "house_points_progress_percent": house_points_progress_percent,
+        "workouts_to_streak": workouts_to_streak,
+        "points_to_lead": points_to_lead,
+        "leading_house_name": leading_house_name,
         "activities": activities,
         "challenges": challenges_display,
         "house_theme": theme,
