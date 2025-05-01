@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}OctoFit Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <style>
+      @media (max-width: 600px) {
+        body, .banner, .dynamic-contrast, .back-button, .onboarding-checklist, .onboarding-progress-bar {
+          font-size: 1em;
+          padding: 1em 0.5em;
+        }
+        button, .back-button { font-size: 1em; padding: 0.7em 1.2em; }
+      }
+      button:focus, .back-button:focus, a:focus {
+        outline: 3px solid #1976d2;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px #90caf9;
+      }
+      .octocoach-avatar {
+        transition: box-shadow 0.3s, transform 0.3s;
+        box-shadow: 0 0 0 0 #4fc3f7;
+      }
+      .octocoach-avatar.speaking {
+        box-shadow: 0 0 16px 4px #4fc3f7, 0 0 32px 8px #1976d2;
+        animation: octocoach-bounce 0.7s;
+      }
+      @keyframes octocoach-bounce {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.15); }
+        60% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+      }
+      .coach-message {
+        background: #e3f7fc;
+        border-radius: 16px 16px 16px 4px;
+        padding: 0.7em 1.1em;
+        margin-bottom: 0.5em;
+        display: inline-block;
+        position: relative;
+        color: #1976d2;
+        font-weight: 500;
+        box-shadow: 0 2px 8px #4fc3f722;
+      }
+      .coach-message:after {
+        content: '';
+        position: absolute;
+        left: -12px;
+        top: 18px;
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-right: 12px solid #e3f7fc;
+      }
+      body.octofit-morning #octocoach-panel { background: linear-gradient(135deg, #e3f7fc 60%, #fffbe7 100%); }
+      body.octofit-afternoon #octocoach-panel { background: linear-gradient(135deg, #fffbe7 60%, #ffe0b2 100%); }
+      body.octofit-evening #octocoach-panel { background: linear-gradient(135deg, #e3e3fc 60%, #b3c6fc 100%); }
+      body.octofit-night #octocoach-panel { background: linear-gradient(135deg, #232946 60%, #1a1a2e 100%); color: #fff; }
+      body.house-Kraken #octocoach-panel { background-image: url('/static/octofitapp-small.png'), linear-gradient(135deg, #e3f7fc 60%, #b3e5fc 100%); background-size: 80px, cover; background-repeat: no-repeat; background-position: 98% 10%; }
+      body.house-Montana #octocoach-panel { background: linear-gradient(135deg, #fffbe7 60%, #ffe0b2 100%); }
+      body.house-Razor #octocoach-panel { background: linear-gradient(135deg, #fbe7e7 60%, #ffb2b2 100%); }
+      body.house-Serene #octocoach-panel { background: linear-gradient(135deg, #e7fbe7 60%, #b2ffd9 100%); }
+      #octocoach-panel { transition: background 0.7s; }
+      .octocoach-confetti {
+        pointer-events: none;
+        position: fixed;
+        z-index: 99999;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .octocoach-confetti-piece {
+        position: absolute;
+        width: 16px; height: 16px;
+        font-size: 1.5em;
+        opacity: 0.85;
+        will-change: transform;
+        animation: confetti-fall 1.7s cubic-bezier(.62,.01,.36,1) forwards;
+      }
+      @keyframes confetti-fall {
+        0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateY(90vh) rotate(360deg); opacity: 0; }
+      }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="back-button" aria-label="Back to League">&#128260; Back to League</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="#">House Stats</a>
+        {% if user.is_authenticated %}
+        <span id="friends-btn" style="cursor:pointer;margin-left:1em;" title="Friends">
+            <span style="font-size:1.3em;vertical-align:middle;">🤝</span>
+            <span style="font-size:1em;">Friends</span>
+        </span>
+        <span id="teams-btn" style="cursor:pointer;margin-left:1em;" title="Teams">
+            <span style="font-size:1.3em;vertical-align:middle;">👥</span>
+            <span style="font-size:1em;">Teams</span>
+        </span>
+        <span id="notification-bell" style="cursor:pointer;position:relative;" title="Notifications">
+            <span style="font-size:1.5em;">🔔</span>
+            <span id="notif-count" style="position:absolute;top:-6px;right:-6px;background:#ff5252;color:#fff;border-radius:50%;font-size:0.8em;padding:2px 6px;display:none;">0</span>
+        </span>
+        <span id="profile-btn" style="cursor:pointer;margin-left:1em;" title="Profile">
+            <span id="profile-avatar" style="font-size:1.3em;vertical-align:middle;">👤</span>
+            <span style="font-size:1em;">{{ user.username }}</span>
+        </span>
+        <p style="display:inline;margin-left:1em;">| <a href="{% url 'logout' %}">Logout</a></p>
+        {% else %}
+        <a href="{% url 'login' %}">Login</a> | <a href="{% url 'register' %}">Register</a>
+        {% endif %}
+    </nav>
+    {% block content %}{% endblock %}
+    <!-- OctoCoach Chat Panel -->
+    <div id="octocoach-panel" style="display:none; position:fixed; bottom:80px; right:30px; width:340px; max-width:95vw; background:#fff; border-radius:18px; box-shadow:0 4px 24px #0003; z-index:9999; padding:1.2em 1em;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:2em;" id="octocoach-avatar" class="octocoach-avatar">🐙</span>
+        <strong>OctoCoach</strong>
+        <button id="octocoach-close" style="background:none;border:none;font-size:1.5em;cursor:pointer;">✖️</button>
+        <button id="octocoach-tts-toggle" title="Read Aloud" style="background:none;border:none;font-size:1.5em;cursor:pointer;margin-left:0.5em;">🔊</button>
+      </div>
+      <div id="octocoach-messages" style="margin:1em 0;max-height:180px;overflow-y:auto;font-size:1.05em;"></div>
+      <div id="octocoach-typing" style="display:none;color:#888;font-size:0.95em;">OctoCoach is typing...</div>
+      <div style="margin:0.7em 0 0.5em 0;">
+        <label for="octocoach-persona" style="font-size:0.95em;">Bot Persona:</label>
+        <select id="octocoach-persona" style="margin-left:0.5em;">
+          <option value="arnold">Classic Arnold</option>
+          <option value="jennifer">Motivational Coach</option>
+          <option value="katy">Chill Buddy</option>
+          <option value="mel">Action Hero</option>
+        </select>
+      </div>
+      <input id="octocoach-input" type="text" placeholder="Type your question..." style="width:70%;padding:0.5em;border-radius:8px;border:1px solid #ccc;">
+      <button id="octocoach-send" style="margin-left:0.5em;">Send</button>
+    </div>
+    <div id="octocoach-confetti" class="octocoach-confetti" style="display:none;"></div>
+    <button id="octocoach-button" aria-label="Ask OctoCoach" style="position:fixed;bottom:30px;right:30px;z-index:1200;background:#4fc3f7;color:#fff;border:none;border-radius:50%;width:60px;height:60px;font-size:2em;box-shadow:0 2px 12px #0002;cursor:pointer;">
+      🐙
+    </button>
+    <audio id="octocoach-sound" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa4c82.mp3"></audio>
+    <audio id="octocoach-bell" src="/static/audio/gym-bell.mp3"></audio>
+    <audio id="octocoach-arnold" src="/static/audio/arnold-ill-be-back.mp3"></audio>
+    <script>
+    // Expose onboarding flag to JS
+    window.OCTOFIT_ONBOARDING_NEEDED = {{ onboarding_needed|yesno:'true,false' }};
+    // OctoCoach Chat Logic
+    const octocoachButton = document.getElementById('octocoach-button');
+    const octocoachPanel = document.getElementById('octocoach-panel');
+    const octocoachSend = document.getElementById('octocoach-send');
+    const octocoachInput = document.getElementById('octocoach-input');
+    const octocoachMessages = document.getElementById('octocoach-messages');
+    const octocoachTyping = document.getElementById('octocoach-typing');
+    const octocoachSound = document.getElementById('octocoach-sound');
+    const octocoachBell = document.getElementById('octocoach-bell');
+    const octocoachArnold = document.getElementById('octocoach-arnold');
+    let ttsEnabled = false;
+    const ttsToggle = document.getElementById('octocoach-tts-toggle');
+    if (ttsToggle) {
+      ttsToggle.onclick = function() {
+        ttsEnabled = !ttsEnabled;
+        ttsToggle.style.color = ttsEnabled ? '#1976d2' : '';
+      };
+    }
+    function getGuestGreeting(persona) {
+      const loginUrl = '/accounts/login/';
+      const registerUrl = '/register/';
+      if (persona === 'arnold') {
+        return `Ahoy there, future OctoFitter! 🐙 Before we pump any iron, you gotta hop aboard. ⛵ <a href='${loginUrl}'>Log in</a> or <a href='${registerUrl}'>create an account</a> — I’ll be here cheering you on! 💪 Once you’re in, I’ll help you pick a house, log activities, and start your fitness adventure! 🌊`;
+      } else if (persona === 'jennifer') {
+        return `Hey there, future OctoFitter! 🌟 Before we get started, please <a href='${loginUrl}'>log in</a> or <a href='${registerUrl}'>create an account</a>. I’ll be here cheering you on! ✨ Once you’re in, I’ll help you pick a house, log activities, and start your wellness journey!`;
+      } else if (persona === 'katy') {
+        return `Hey superstar! 🎤 Before we make fitness fireworks, <a href='${loginUrl}'>log in</a> or <a href='${registerUrl}'>create an account</a> — I’ll be here cheering you on! 💃🌈 Once you’re in, I’ll help you pick a house, log activities, and start your fitness adventure!`;
+      } else if (persona === 'mel') {
+        return `Ready for action, recruit? 🦸‍♂️ Before you join the OctoFit squad, <a href='${loginUrl}'>log in</a> or <a href='${registerUrl}'>create an account</a>. I’ll be here cheering you on! ⚔️💥 Once you’re in, I’ll help you pick a house, log activities, and start your fitness adventure!`;
+      } else {
+        return `Ahoy there, future OctoFitter! 🐙 Before we swim any laps, you’ll need to hop aboard. ⛵ — I’ll be here cheering you on! 💪 Once you’re in, I’ll help you pick a house, log activities, and start your fitness adventure! 🌊`;
+      }
+    }
+    const personaSelect = document.getElementById('octocoach-persona');
+    if (personaSelect) {
+      personaSelect.value = localStorage.getItem('octocoachPersona') || 'arnold';
+      personaSelect.onchange = function() {
+        localStorage.setItem('octocoachPersona', personaSelect.value);
+        fetch('/api/user-profile/update/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+          body: JSON.stringify({ bot_persona: personaSelect.value })
+        });
+        if (!{{ user.is_authenticated|yesno:'true,false' }}) {
+          // Update guest greeting in chat
+          if (octocoachPanel) octocoachPanel.style.display = 'block';
+          if (octocoachMessages) {
+            octocoachMessages.innerHTML = '';
+            appendCoachMessage(getGuestGreeting(personaSelect.value));
+          }
+        }
+      };
+    }
+    function speakText(text) {
+      if (!ttsEnabled || !window.speechSynthesis) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.05;
+      utter.pitch = 1.1;
+      utter.volume = 1;
+      utter.lang = 'en-US';
+      // Fun voice selection (if available)
+      const voices = window.speechSynthesis.getVoices();
+      const arnoldVoice = voices.find(v => v.name.toLowerCase().includes('fred') || v.name.toLowerCase().includes('zarvox'));
+      if (arnoldVoice) utter.voice = arnoldVoice;
+      window.speechSynthesis.speak(utter);
+    }
+    function playMilestoneAudio(msg) {
+      // Play bell for challenge, badge, or streak; Arnold for big milestone
+      if (/level up|milestone|congrats|badge|achievement|challenge completed|7-day streak|100 house points/i.test(msg)) {
+        const bell = document.getElementById('octocoach-bell');
+        if (bell) { bell.currentTime = 0; bell.play(); }
+      }
+      if (/arnold|i'll be back|hasta la vista|terminator|arnold-ism/i.test(msg)) {
+        const arnold = document.getElementById('octocoach-arnold');
+        if (arnold) { arnold.currentTime = 0; arnold.play(); }
+      }
+    }
+    if (octocoachButton && octocoachPanel) {
+        octocoachButton.onclick = function() {
+            octocoachPanel.style.display = octocoachPanel.style.display === 'block' ? 'none' : 'block';
+        };
+    }
+    document.getElementById('octocoach-close').onclick = function() {
+        octocoachPanel.style.display = 'none';
+    };
+    function appendUserMessage(msg) {
+        const userBubble = document.createElement('div');
+        userBubble.className = 'user-message';
+        userBubble.textContent = msg;
+        octocoachMessages.appendChild(userBubble);
+        octocoachMessages.scrollTop = octocoachMessages.scrollHeight;
+    }
+    function launchOctoConfetti(emoji) {
+      const confetti = document.getElementById('octocoach-confetti');
+      if (!confetti) return;
+      confetti.innerHTML = '';
+      confetti.style.display = 'block';
+      const colors = ['#4fc3f7','#81d4fa','#ffd600','#ff5252','#43a047','#1976d2'];
+      for (let i = 0; i < 24; i++) {
+        const el = document.createElement('span');
+        el.className = 'octocoach-confetti-piece';
+        el.textContent = emoji || (i%2===0?'🎉':'🏅');
+        el.style.left = (Math.random()*90+5)+'vw';
+        el.style.color = colors[Math.floor(Math.random()*colors.length)];
+        el.style.animationDelay = (Math.random()*0.5)+'s';
+        confetti.appendChild(el);
+      }
+      setTimeout(()=>{ confetti.style.display = 'none'; }, 2000);
+    }
+    function appendCoachMessage(msg) {
+        const coachBubble = document.createElement('div');
+        coachBubble.className = 'coach-message';
+        coachBubble.innerHTML = msg; // Use innerHTML so links render
+        octocoachMessages.appendChild(coachBubble);
+        octocoachMessages.scrollTop = octocoachMessages.scrollHeight;
+        // Animate avatar when bot speaks
+        const avatar = document.getElementById('octocoach-avatar');
+        if (avatar) {
+          avatar.classList.add('speaking');
+          setTimeout(() => avatar.classList.remove('speaking'), 800);
+        }
+        if (octocoachSound) { octocoachSound.currentTime = 0; octocoachSound.play(); }
+        speakText(msg);
+        // Confetti for milestone keywords
+        if (/streak|milestone|badge|congrats|confetti|achievement|level up|100 house points|7-day streak|challenge completed/i.test(msg)) {
+          launchOctoConfetti();
+        }
+        playMilestoneAudio(msg);
+    }
+    octocoachSend.onclick = function() {
+        const userMessage = octocoachInput.value;
+        if (userMessage.trim()) {
+            appendUserMessage(userMessage);
+            octocoachTyping.style.display = 'block';
+            fetch('/ask_coachbot/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ message: userMessage, persona: personaSelect ? personaSelect.value : 'arnold' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                octocoachTyping.style.display = 'none';
+                if (data.response) {
+                    appendCoachMessage(data.response);
+                }
+            })
+            .catch(() => {
+                octocoachTyping.style.display = 'none';
+            });
+            octocoachInput.value = '';
+        }
+    };
+    // Auto-open OctoCoach and send onboarding message if needed
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!{{ user.is_authenticated|yesno:'true,false' }}) {
+        setTimeout(function() {
+          if (octocoachPanel) octocoachPanel.style.display = 'block';
+          if (octocoachMessages) {
+            octocoachMessages.innerHTML = '';
+            appendCoachMessage(getGuestGreeting(personaSelect ? personaSelect.value : 'arnold'));
+          }
+        }, 600);
+      } else if (window.OCTOFIT_ONBOARDING_NEEDED) {
+        setTimeout(function() {
+          if (octocoachPanel) octocoachPanel.style.display = 'block';
+          if (octocoachMessages) {
+            appendCoachMessage('👋 Welcome to OctoFit! I’m OctoCoach. Ready to get started? I can help you pick a house, log your first activity, and join a challenge. What’s your fitness vibe? (Strength, Fun, Competition, or Calm?)');
+          }
+        }, 600);
+      }
+    });
+    // Dynamic backgrounds based on time and house
+    function setOctoFitBackground() {
+      const hour = new Date().getHours();
+      let timeClass = 'octofit-morning';
+      if (hour >= 18 || hour < 5) timeClass = 'octofit-night';
+      else if (hour >= 15) timeClass = 'octofit-evening';
+      else if (hour >= 11) timeClass = 'octofit-afternoon';
+      else timeClass = 'octofit-morning';
+      document.body.classList.remove('octofit-morning','octofit-afternoon','octofit-evening','octofit-night');
+      document.body.classList.add(timeClass);
+      // House-based backgrounds
+      let house = null;
+      try {
+        house = document.querySelector('#dashboard-stats strong')?.nextSibling?.textContent?.trim();
+      } catch {}
+      if (!house && window.userHouseName) house = window.userHouseName;
+      document.body.classList.remove('house-Kraken','house-Montana','house-Razor','house-Serene');
+      if (house && ['Kraken','Montana','Razor','Serene'].includes(house)) {
+        document.body.classList.add('house-' + house);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', setOctoFitBackground);
+    </script>
+</body>
+</html>

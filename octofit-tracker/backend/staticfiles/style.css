@@ -1,0 +1,338 @@
+/* ====== General Layout ====== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    text-align: center;
+    background: url('https://example.com/sea-background.jpg') repeat-y center top;
+    background-attachment: fixed;
+    background-size: cover;
+    padding: 2rem;
+    animation: parallax-scroll 30s linear infinite;
+}
+
+@keyframes parallax-scroll {
+    from {
+        background-position: 0 0;
+    }
+    to {
+        background-position: 0 100%;
+    }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.intro {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #cbd5e1;
+}
+
+/* ====== Anchor Reset ====== */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ====== House Cards on Home Page ====== */
+.houses {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.houses a {
+    display: inline-block;
+    margin: 20px;
+    padding: 20px;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s;
+}
+
+.houses a:hover {
+    transform: scale(1.1);
+}
+
+a.house {
+    display: block;
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 220px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 3px solid white;
+    transition: transform 0.3s, box-shadow 0.3s, color 0.3s;
+}
+
+a.house:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    color: #facc15; /* Optional: soft yellow glow on hover */
+}
+
+/* ====== House Themes ====== */
+.houses .kraken::before {
+    content: "\1F419"; /* Octopus emoji */
+    display: block;
+    font-size: 50px;
+}
+
+.houses .manta::before {
+    content: "\1F420"; /* Tropical fish emoji */
+    display: block;
+    font-size: 50px;
+}
+
+.houses .rayzor::before {
+    content: "\1F41F"; /* Fish emoji */
+    display: block;
+    font-size: 50px;
+}
+
+.houses .siren::before {
+    content: "\1F3CA"; /* Swimmer emoji */
+    display: block;
+    font-size: 50px;
+}
+
+.kraken {
+    border-color: navy;
+}
+.manta {
+    border-color: aqua;
+}
+.rayzor {
+    border-color: gold;
+}
+.siren {
+    border-color: coral;
+}
+
+/* ====== Glowing Effect ====== */
+.glow {
+    animation: glow-animation 1.5s infinite alternate;
+    box-shadow: 0 0 20px #ffcc00;
+}
+
+@keyframes glow-animation {
+    from {
+        box-shadow: 0 0 10px #ffcc00;
+    }
+    to {
+        box-shadow: 0 0 30px #ffcc00;
+    }
+}
+
+/* ====== Footer ====== */
+footer {
+    margin-top: 4rem;
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+/* ====== House Detail Page ====== */
+.house-detail {
+    font-family: 'Segoe UI', sans-serif;
+    text-align: center;
+    background-color: #0f172a;
+    color: white;
+    padding: 40px;
+}
+
+.banner {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.description {
+    font-size: 1.2rem;
+    color: #94a3b8;
+}
+
+/* Fix for OctoCoach Chat Panel */
+#octocoach {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+#octocoach-panel {
+    display: none;
+    position: absolute;
+    bottom: 50px;
+    right: 0;
+    width: 300px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    cursor: move;
+}
+#octocoach-panel.dragging {
+    opacity: 0.85;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+
+#octocoach-messages {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+}
+
+#octocoach-input {
+    width: calc(100% - 60px);
+    padding: 5px;
+    margin-right: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#octocoach-send {
+    padding: 5px 10px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#octocoach-send:hover {
+    background: #0056b3;
+}
+
+/* ====== OctoCoach Chat Bubble Styles ====== */
+.user-message {
+    background: #e0f7fa;
+    color: #00796b;
+    padding: 8px 12px;
+    border-radius: 16px 16px 4px 16px;
+    margin: 6px 0 6px 40px;
+    text-align: right;
+    max-width: 80%;
+    align-self: flex-end;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.coach-message {
+    background: #fff3e0;
+    color: #e65100;
+    padding: 8px 12px;
+    border-radius: 16px 16px 16px 4px;
+    margin: 6px 40px 6px 0;
+    text-align: left;
+    max-width: 80%;
+    align-self: flex-start;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ====== Typing Indicator ====== */
+#octocoach-typing {
+    font-size: 0.95em;
+    color: #888;
+    margin: 4px 0 0 0;
+    padding-left: 6px;
+    display: none;
+}
+
+/* ====== Quick Prompts ====== */
+#octocoach-quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.octocoach-prompt-btn {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.octocoach-prompt-btn:hover {
+    background: #c7d2fe;
+}
+
+/* ====== Emoji Picker ====== */
+#octocoach-emoji-picker {
+    display: none;
+    position: absolute;
+    bottom: 60px;
+    left: 10px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 6px 8px;
+    z-index: 1100;
+}
+#octocoach-emoji-picker span {
+    font-size: 1.3em;
+    margin: 2px;
+    cursor: pointer;
+}
+#octocoach-emoji-btn {
+    background: none;
+    border: none;
+    font-size: 1.3em;
+    cursor: pointer;
+    margin-right: 4px;
+}
+
+/* ====== Sound Notification ====== */
+#octocoach-sound {
+    display: none;
+}
+
+/* Centering and Spacing Fixes */
+.recommendations ul {
+    list-style: none;
+    padding: 0;
+}
+
+.recommendations li {
+    margin: 10px 0;
+    padding: 10px;
+    background: #e9ecef;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.recommendations button {
+    padding: 5px 10px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.recommendations button:hover {
+    background: #218838;
+}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}OctoFit Home{% endblock %}
+{% block content %}
+<h1>Welcome to OctoFit!</h1>
+<a href="/submit-activity/" class="log-activity-btn" style="display:inline-block;background:#1976d2;color:#fff;padding:0.7em 1.5em;border-radius:8px;font-size:1.1em;margin-bottom:1.5em;text-decoration:none;">➕ Log Activity</a>
+
+{# Show OctoCoach message if present #}
+{% if octocoach_message %}
+  <div id="octocoach-auto-message" style="background:#e3f7fc;border-left:5px solid #4fc3f7;padding:1em 1.5em;margin-bottom:1.5em;border-radius:8px;font-size:1.1em;">
+    <span style="font-size:1.5em;vertical-align:middle;">🐙</span> {{ octocoach_message }}
+  </div>
+{% endif %}
+
+{# Always show all houses and allow switching #}
+<div id="house-selection" style="margin-bottom:2em;">
+  <h2>All Houses</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:1.5em;justify-content:center;">
+    {% for house in houses %}
+      <div style="background:#f7fafd;border:2px solid #4fc3f7;border-radius:12px;padding:1em 2em;min-width:180px;text-align:center;box-shadow:0 2px 8px #0001;">
+        <div style="font-size:2em;">🏠</div>
+        <div style="font-size:1.2em;font-weight:bold;">{{ house.name }}</div>
+        <div style="color:#888;font-size:0.95em;margin:0.5em 0 0.7em 0;">{{ house.description }}</div>
+        {% if user.is_authenticated %}
+          <form method="post" action="/join_house/" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="house_id" value="{{ house.id }}">
+            <button type="submit" style="background:#4fc3f7;color:#fff;border:none;border-radius:6px;padding:0.5em 1.2em;font-size:1em;cursor:pointer;">{% if user.userprofile.house and user.userprofile.house.id == house.id %}Current House{% else %}Switch to {{ house.name }}{% endif %}</button>
+          </form>
+        {% endif %}
+        <a href="/house/{{ house.name }}/" style="display:block;margin-top:0.5em;color:#1976d2;text-decoration:underline;">View Details</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div id="dashboard-stats">
+  <p><strong>Your House:</strong> 
+    {% if user.is_authenticated and user.userprofile.house %}
+      {{ user.userprofile.house.name }}
+    {% else %}
+      None
+    {% endif %}
+  </p>
+  <p><strong>Streak:</strong> <span id="streak-count">{% if user.is_authenticated %}{{ user.userprofile.streak_count }}{% else %}0{% endif %}</span> days</p>
+  <p><strong>House Points:</strong> <span id="house-points">{% if user.is_authenticated and user.userprofile.house %}{{ user.userprofile.house.points }}{% else %}0{% endif %}</span></p>
+  <div style="margin:1em 0;">
+    <div>Workouts this week: <span id="workouts-this-week">0</span></div>
+    <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:200px;">
+      <div id="workouts-progress" style="background:linear-gradient(90deg,#4fc3f7,#81d4fa);height:100%;width:0%;transition:width 0.5s;"></div>
+    </div>
+  </div>
+</div>
+<div id="badge-celebration" style="display:none;text-align:center;margin-top:2em;"></div>
+<script>
+function updateDashboard() {
+  fetch('/user_progress_api/')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('streak-count').textContent = data.streak;
+      document.getElementById('house-points').textContent = data.house_points;
+      document.getElementById('workouts-this-week').textContent = data.workouts_this_week;
+      document.getElementById('workouts-progress').style.width = data.workouts_progress_percent + '%';
+    });
+}
+function checkBadges() {
+  fetch('/user_profile_api/')
+    .then(r => r.json())
+    .then(data => {
+      // Optionally, fetch badges and compare to previous state for new ones
+      // For demo: show a celebration if streak is 7 or house_points >= 500
+      const streak = parseInt(document.getElementById('streak-count').textContent);
+      const housePoints = parseInt(document.getElementById('house-points').textContent);
+      if (streak >= 7 || housePoints >= 500) {
+        showBadgeCelebration(streak >= 7 ? '7-Day Streak!' : '500+ House Points!');
+      }
+    });
+}
+function showBadgeCelebration(text) {
+  const el = document.getElementById('badge-celebration');
+  el.innerHTML = `<div style='font-size:2.5em;'>🎉🏅</div><div style='font-size:1.3em;margin:0.5em 0;'>${text}</div>`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  updateDashboard();
+  checkBadges();
+});
+</script>
+{% endblock %}

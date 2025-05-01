@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}House Details{% endblock %}
+{% block content %}
+<h1>House: {{ house.name }}</h1>
+<a href="/submit-activity/" class="log-activity-btn" style="display:inline-block;background:#1976d2;color:#fff;padding:0.7em 1.5em;border-radius:8px;font-size:1.1em;margin-bottom:1.5em;text-decoration:none;">➕ Log Activity</a>
+<p><strong>Mascot:</strong> {{ house.mascot }}</p>
+<p><strong>Theme:</strong> {{ house.theme }}</p>
+<p><strong>Description:</strong> {{ house.description }}</p>
+<p><strong>Points:</strong> <span id="house-detail-points">{{ house.points }}</span></p>
+
+{# Switch House Button #}
+<form method="post" action="/join_house/" style="margin:1em 0;">
+  {% csrf_token %}
+  <input type="hidden" name="house_id" value="{{ house.id }}">
+  <button type="submit" style="background:#4fc3f7;color:#fff;border:none;border-radius:6px;padding:0.5em 1.2em;font-size:1em;cursor:pointer;">Switch to {{ house.name }}</button>
+</form>
+
+{# Activities #}
+{% if activities %}
+  <h2>House Activities</h2>
+  <ul>
+    {% for activity in activities %}
+      <li>{{ activity }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{# Challenges #}
+{% if challenges %}
+  <h2>House Challenges</h2>
+  <ul>
+    {% for challenge in challenges %}
+      <li>
+        {{ challenge.text }}
+        {% if challenge.is_completed %}<span style="color:green;">✔️</span>{% elif challenge.is_accepted %}<span style="color:orange;">(Accepted)</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{# Badges #}
+{% if badges %}
+  <h2>House Badges</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:1em;">
+    {% for badge in badges %}
+      <div style="background:#f7fafd;border:1px solid #4fc3f7;border-radius:8px;padding:0.7em 1.2em;min-width:120px;text-align:center;">
+        <div style="font-size:2em;">{{ badge.emoji }}</div>
+        <div style="font-weight:bold;">{{ badge.name }}</div>
+        <div style="font-size:0.95em;color:#888;">{{ badge.desc }}</div>
+        {% if badge.id in user_badge_ids %}<span style="color:green;">Unlocked ✔️</span>{% else %}<span style="color:#aaa;">Locked 🔒</span>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# Leaderboard #}
+<h2>House Leaderboard</h2>
+{% if house_members %}
+  <ol>
+    {% for member in house_members %}
+      <li>{{ member.username }} - {{ member.points }} pts</li>
+    {% endfor %}
+  </ol>
+{% else %}
+  <p>No members yet.</p>
+{% endif %}
+
+{# Progress Bars #}
+<div style="margin:2em 0;">
+  <div><strong>Your Workouts This Week:</strong> {{ user_workouts_this_week }}</div>
+  <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:200px;">
+    <div style="background:linear-gradient(90deg,#4fc3f7,#81d4fa);height:100%;width:{{ workouts_progress_percent }}%;transition:width 0.5s;"></div>
+  </div>
+  <div><strong>Your Streak:</strong> {{ user_streak }} days</div>
+  <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:200px;">
+    <div style="background:linear-gradient(90deg,#81d4fa,#4fc3f7);height:100%;width:{{ streak_progress_percent }}%;transition:width 0.5s;"></div>
+  </div>
+  <div><strong>House Points Progress:</strong> {{ user_house_points }} pts</div>
+  <div style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;width:200px;">
+    <div style="background:linear-gradient(90deg,#4fc3f7,#1976d2);height:100%;width:{{ house_points_progress_percent }}%;transition:width 0.5s;"></div>
+  </div>
+</div>
+
+{# Motivational Quote #}
+<div style="margin:1.5em 0;font-size:1.1em;color:#1976d2;"><em>{{ motivational_quote }}</em></div>
+
+<div id="house-badge-celebration" style="display:none;text-align:center;margin-top:2em;"></div>
+<script>
+function updateHouseDetail() {
+  fetch('/user_progress_api/')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('house-detail-points').textContent = data.house_points;
+      // Optionally update other stats
+    });
+}
+function checkHouseBadges() {
+  fetch('/user_profile_api/')
+    .then(r => r.json())
+    .then(data => {
+      // For demo: show a celebration if house_points >= 500
+      const housePoints = parseInt(document.getElementById('house-detail-points').textContent);
+      if (housePoints >= 500) {
+        showHouseBadgeCelebration('500+ House Points!');
+      }
+    });
+}
+function showHouseBadgeCelebration(text) {
+  const el = document.getElementById('house-badge-celebration');
+  el.innerHTML = `<div style='font-size:2.5em;'>🎉🏆</div><div style='font-size:1.3em;margin:0.5em 0;'>${text}</div>`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  updateHouseDetail();
+  checkHouseBadges();
+});
+</script>
+{% endblock %}
