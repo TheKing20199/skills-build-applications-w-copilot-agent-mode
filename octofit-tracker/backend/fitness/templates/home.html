@@ -1,6 +1,78 @@
 {% extends 'base.html' %}
 {% block title %}OctoFit Home{% endblock %}
 {% block content %}
+
+{% if not user.is_authenticated %}
+<!-- OctoCoach Onboarding Quiz Modal -->
+<div id="octocoach-quiz-modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;box-shadow:0 4px 24px #0003;padding:2em 2.2em;max-width:95vw;width:370px;text-align:center;position:relative;">
+    <span style="font-size:2.2em;">🐙</span>
+    <h2 style="margin:0.5em 0 0.2em 0;">Ahoy, future OctoFitter!</h2>
+    <div id="octocoach-quiz-content">
+      <div id="quiz-q1">
+        <p style="font-size:1.1em;">What’s your workout vibe?</p>
+        <button class="quiz-btn" data-a="zen">🧘‍♀️ Zen</button>
+        <button class="quiz-btn" data-a="beast">🏋️‍♂️ Beast Mode</button>
+        <button class="quiz-btn" data-a="dance">🕺 Dance Party</button>
+        <button class="quiz-btn" data-a="dive">🤿 Deep Dive</button>
+      </div>
+      <div id="quiz-q2" style="display:none;">
+        <p style="font-size:1.1em;">What motivates you more?</p>
+        <button class="quiz-btn" data-a="peace">Inner peace</button>
+        <button class="quiz-btn" data-a="leaderboard">Crushing the leaderboard</button>
+        <button class="quiz-btn" data-a="team">Team spirit</button>
+        <button class="quiz-btn" data-a="adventure">New skills & adventure</button>
+      </div>
+      <div id="quiz-q3" style="display:none;">
+        <p style="font-size:1.1em;">Pick your ideal mascot:</p>
+        <button class="quiz-btn" data-a="kraken">🦑 Kraken</button>
+        <button class="quiz-btn" data-a="rayzor">🐬 Rayzor</button>
+        <button class="quiz-btn" data-a="siren">🧜‍♀️ Siren</button>
+        <button class="quiz-btn" data-a="manta">🐢 Manta</button>
+      </div>
+      <div id="quiz-result" style="display:none;"></div>
+    </div>
+    <button id="octocoach-quiz-close" style="position:absolute;top:10px;right:16px;background:none;border:none;font-size:1.5em;cursor:pointer;">✖️</button>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let answers = [];
+  const q1 = document.getElementById('quiz-q1');
+  const q2 = document.getElementById('quiz-q2');
+  const q3 = document.getElementById('quiz-q3');
+  const result = document.getElementById('quiz-result');
+  const content = document.getElementById('octocoach-quiz-content');
+  const closeBtn = document.getElementById('octocoach-quiz-close');
+  function showResult() {
+    // Simple logic: map answers to house
+    let house = 'Rayzor', desc = '', emoji = '🐬';
+    if (answers.includes('zen') || answers.includes('peace')) { house = 'Siren'; desc = 'Graceful, consistent, and calm — Sirens keep the team steady and spirits high!'; emoji = '🧜‍♀️'; }
+    if (answers.includes('beast') || answers.includes('leaderboard')) { house = 'Rayzor'; desc = 'Bold, high-energy sprinters — Rayzors live for friendly competition and making waves!'; emoji = '🐬'; }
+    if (answers.includes('dance') || answers.includes('team')) { house = 'Manta'; desc = 'Playful, social, and always up for a team challenge — Mantas bring the party!'; emoji = '🐢'; }
+    if (answers.includes('dive') || answers.includes('adventure')) { house = 'Kraken'; desc = 'Mighty, mysterious, and always exploring new depths — Krakens are unstoppable!'; emoji = '🦑'; }
+    if (answers.includes('kraken')) { house = 'Kraken'; desc = 'Mighty, mysterious, and always exploring new depths — Krakens are unstoppable!'; emoji = '🦑'; }
+    if (answers.includes('rayzor')) { house = 'Rayzor'; desc = 'Bold, high-energy sprinters — Rayzors live for friendly competition and making waves!'; emoji = '🐬'; }
+    if (answers.includes('siren')) { house = 'Siren'; desc = 'Graceful, consistent, and calm — Sirens keep the team steady and spirits high!'; emoji = '🧜‍♀️'; }
+    if (answers.includes('manta')) { house = 'Manta'; desc = 'Playful, social, and always up for a team challenge — Mantas bring the party!'; emoji = '🐢'; }
+    result.innerHTML = `<div style='font-size:2em;'>${emoji}</div><h3>Looks like you’re born for House <span style='color:#1976d2;'>${house}</span>!</h3><div style='margin:0.7em 0 1.2em 0;'>${desc}</div><div style='font-size:1.1em;'>Let’s make it official — <a href='/accounts/register/'>sign up</a> or <a href='/accounts/login/'>log in</a> to start your OctoFit journey!</div>`;
+    result.style.display = '';
+  }
+  content.addEventListener('click', function(e) {
+    if (e.target.classList.contains('quiz-btn')) {
+      answers.push(e.target.getAttribute('data-a'));
+      if (q1.style.display !== 'none') { q1.style.display = 'none'; q2.style.display = ''; return; }
+      if (q2.style.display !== 'none') { q2.style.display = 'none'; q3.style.display = ''; return; }
+      if (q3.style.display !== 'none') { q3.style.display = 'none'; showResult(); return; }
+    }
+  });
+  closeBtn.onclick = function() {
+    document.getElementById('octocoach-quiz-modal').style.display = 'none';
+  };
+});
+</script>
+{% endif %}
+
 <h1>Welcome to OctoFit!</h1>
 <a href="/submit-activity/" class="log-activity-btn" style="display:inline-block;background:#1976d2;color:#fff;padding:0.7em 1.5em;border-radius:8px;font-size:1.1em;margin-bottom:1.5em;text-decoration:none;">➕ Log Activity</a>
 
