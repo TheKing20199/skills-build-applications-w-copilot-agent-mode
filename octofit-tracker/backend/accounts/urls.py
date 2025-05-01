@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth.views import LogoutView
-from .views import accounts_home, login_view, register, profile_settings
+from .views import accounts_home, login_view, register, profile_settings, guest_login
 
 urlpatterns = [
     path('', accounts_home, name='accounts_home'),
@@ -8,4 +8,5 @@ urlpatterns = [
     path('register/', register, name='register'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', profile_settings, name='profile_settings'),
+    path('guest-login/', guest_login, name='guest_login'),
 ]
