@@ -16,13 +16,15 @@ OctoFit is the world’s first AI-powered, house-based fitness league for school
 ---
 
 ## 🎬 Demo Flow (Impress the Judges!)
-1. **Guest Walkthrough:** Click “Try as Guest” for instant access—no signup needed.
+1. **Register/Login:** Create an account or log in with your credentials.
 2. **AI Onboarding:** Take the “Which Sea Creature Are You?” GPT-powered quiz to get sorted into a house.
 3. **Log Activities:** Submit a workout and get a personalized coaching prompt from OctoCoach.
 4. **Take on Challenges:** Complete a challenge and see instant AI feedback and confetti.
-5. **Notifications:** Click the bell to see real-time updates for friend requests, comments, and more.
-6. **Leaderboard & House Battle:** Watch the animated house battle meter and see who’s on top.
-7. **Admin Power:** Use Django admin to add/edit houses, challenges, and badges—no code required.
+5. **Profile Settings:** Update your info and toggle email reminders (with a clear Save and success message).
+6. **House Stats:** Click the House Stats link to see your house’s progress and leaderboard.
+7. **Notifications:** Click the bell to see real-time updates for friend requests, comments, and more.
+8. **Leaderboard & House Battle:** Watch the animated house battle meter and see who’s on top.
+9. **Admin Power:** Use Django admin to add/edit houses, challenges, and badges—no code required.
 
 ---
 
@@ -75,10 +77,12 @@ OctoFit is the world’s first AI-powered, house-based fitness league for school
 
 ## 🗺️ How to Navigate OctoFit
 - **Home:** See all houses, join/switch, and view your dashboard.
-- **Try as Guest:** Use the “Try as Guest” button on the login page for instant demo access (no signup needed).
+- **Login/Register:** Use the login or register links to create an account and access all features.
+- **Profile Settings:** Click your username/avatar in the navbar to access your profile and update your info, avatar, and email reminders.
 - **Onboarding:** New users are guided by OctoCoach and the personality quiz.
 - **Log Activity:** Use the “Log Activity” button on the home or house page.
 - **Challenges:** Accept and complete challenges from your house page.
+- **House Stats:** Click the "House Stats" link in the navbar to view your house's stats and leaderboard (links to your house if assigned).
 - **Notifications:** Click the bell in the navbar for real-time updates (friend requests, comments, etc.).
 - **Friends/Teams:** Use the navbar links to connect and compete.
 - **Admin:** Go to `/admin/` to manage houses, challenges, and badges (superuser required).

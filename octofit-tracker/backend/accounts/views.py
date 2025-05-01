@@ -43,13 +43,31 @@ def login_view(request):
 def guest_login(request):
     if request.user.is_authenticated:
         return redirect('/')
-    # Create a unique guest username
-    username = 'guest_' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    # Create a unique guest username and display name
+    rand_id = ''.join(random.choices(string.digits, k=4))
+    username = f'guest_{rand_id}'
+    display_name = f'Guest{rand_id}'
     password = User.objects.make_random_password()
     user = User.objects.create_user(username=username, password=password)
     user.save()
+    # Assign a random house to the guest user
+    from fitness.models import House, UserProfile, HouseChallenge
+    houses = list(House.objects.all())
+    if houses:
+        import random as pyrandom
+        house = pyrandom.choice(houses)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.house = house
+        profile.onboarding_complete = True
+        profile.avatar = '👤'
+        profile.bio = 'Temporary guest account'
+        profile.save()
+        # Ensure the house has at least one challenge
+        if not house.challenges.exists():
+            HouseChallenge.objects.create(house=house, description="Demo Challenge: Log any activity today!")
+    user.first_name = display_name
+    user.save()
     login(request, user)
-    # Optionally, set a flag or profile field for guest/demo users
     return redirect('/')
 
 @login_required
