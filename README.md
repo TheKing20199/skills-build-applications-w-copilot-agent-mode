@@ -52,6 +52,39 @@ OctoFit is the world’s first AI-powered, house-based fitness league for school
 
 ---
 
+## ⚡ Quick Start (Linux)
+
+1. **Install requirements:**
+   ```bash
+   pip install -r octofit-tracker/backend/requirements.txt
+   ```
+2. **Add your OpenAI API key to `.env` in `octofit-tracker/backend/`**
+3. **Migrate and seed demo data:**
+   ```bash
+   cd octofit-tracker/backend
+   python3 manage.py migrate
+   python3 manage.py populate_db
+   ```
+4. **Start the server:**
+   ```bash
+   pkill -f runserver; sleep 1; cd /workspaces/skills-build-applications-w-copilot-agent-mode/octofit-tracker/backend && python3 manage.py runserver
+   ```
+5. **Open your browser at** [http://localhost:8000/](http://localhost:8000/)
+
+---
+
+## 🗺️ How to Navigate OctoFit
+- **Home:** See all houses, join/switch, and view your dashboard.
+- **Try as Guest:** Use the “Try as Guest” button on the login page for instant demo access (no signup needed).
+- **Onboarding:** New users are guided by OctoCoach and the personality quiz.
+- **Log Activity:** Use the “Log Activity” button on the home or house page.
+- **Challenges:** Accept and complete challenges from your house page.
+- **Notifications:** Click the bell in the navbar for real-time updates (friend requests, comments, etc.).
+- **Friends/Teams:** Use the navbar links to connect and compete.
+- **Admin:** Go to `/admin/` to manage houses, challenges, and badges (superuser required).
+
+---
+
 ## 🦾 How to Run Locally
 1. `pip install -r requirements.txt`
 2. Add your OpenAI API key to `.env`
