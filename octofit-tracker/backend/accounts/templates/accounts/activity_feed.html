@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Activity Feed | OctoFit{% endblock %}
+{% block content %}
+<h1 style="margin-top:1em;">📰 Activity Feed</h1>
+<div id="feed-list" style="margin-bottom:2em;"></div>
+<script>
+function renderFeed(feed) {
+  if (!feed.length) {
+    document.getElementById('feed-list').innerHTML = '<p>No recent activities yet. Start logging workouts or join a challenge!</p>';
+    return;
+  }
+  document.getElementById('feed-list').innerHTML = feed.map(item => `
+    <div style='background:#f7fafd;border:1px solid #4fc3f7;border-radius:8px;padding:0.7em 1.2em;margin-bottom:1em;'>
+      <b>${item.user}</b> ${item.action} <span style='color:#1976d2;'>${item.description}</span>
+      <div style='font-size:0.9em;color:#888;'>${new Date(item.created_at).toLocaleString()}</div>
+      <div style='margin-top:0.5em;'>
+        <input type='text' class='comment-input' data-activity='${item.id}' placeholder='Add a comment...' style='padding:0.2em 0.7em;border-radius:5px;border:1px solid #ccc;width:60%;'>
+        <button class='comment-btn' data-activity='${item.id}' style='background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;'>Comment</button>
+        <button class='react-btn' data-activity='${item.id}' data-emoji='👍' style='background:none;border:none;font-size:1.2em;cursor:pointer;'>👍</button>
+        <button class='react-btn' data-activity='${item.id}' data-emoji='🔥' style='background:none;border:none;font-size:1.2em;cursor:pointer;'>🔥</button>
+        <button class='react-btn' data-activity='${item.id}' data-emoji='🎉' style='background:none;border:none;font-size:1.2em;cursor:pointer;'>🎉</button>
+        <div class='comments-list' id='comments-${item.id}' style='margin-top:0.5em;'></div>
+        <div class='reactions-list' id='reactions-${item.id}' style='margin-top:0.2em;'></div>
+      </div>
+    </div>
+  `).join('');
+  // Attach comment/reaction handlers
+  document.querySelectorAll('.comment-btn').forEach(btn => {
+    btn.onclick = function() {
+      const id = btn.getAttribute('data-activity');
+      const input = document.querySelector(`.comment-input[data-activity='${id}']`);
+      const text = input.value.trim();
+      if (!text) return;
+      fetch('/api/comments/post/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ activity_id: id, text })
+      }).then(r => r.json()).then(() => { input.value = ''; loadComments(id); });
+    };
+  });
+  document.querySelectorAll('.react-btn').forEach(btn => {
+    btn.onclick = function() {
+      const id = btn.getAttribute('data-activity');
+      const emoji = btn.getAttribute('data-emoji');
+      fetch('/api/reactions/post/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ activity_id: id, emoji })
+      }).then(r => r.json()).then(() => { loadReactions(id); });
+    };
+  });
+  // Load comments and reactions for each item
+  feed.forEach(item => { loadComments(item.id); loadReactions(item.id); });
+}
+function loadFeed() {
+  fetch('/api/activity-feed/')
+    .then(r => r.json())
+    .then(data => renderFeed(data.feed));
+}
+function loadComments(activityId) {
+  fetch(`/api/comments/list/?activity_id=${activityId}`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('comments-' + activityId).innerHTML = data.comments.map(c => `<div style='font-size:0.97em;margin-bottom:0.2em;'><b>${c.user}:</b> ${c.text}</div>`).join('');
+    });
+}
+function loadReactions(activityId) {
+  fetch(`/api/reactions/list/?activity_id=${activityId}`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('reactions-' + activityId).innerHTML = data.reactions.map(r => `<span style='font-size:1.1em;margin-right:0.3em;'>${r.emoji}</span>`).join('');
+    });
+}
+document.addEventListener('DOMContentLoaded', loadFeed);
+</script>
+{% endblock %}

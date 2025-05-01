@@ -62,7 +62,7 @@
     <b>Take on a challenge!</b> 
     <a href="#challenges" style="color:#1976d2;text-decoration:underline;">Accept your first challenge</a>
     {% if challenges and challenges.0 and not challenges.0.is_accepted %}
-      <button id="accept-first-challenge-btn" data-challenge-desc="{{ challenges.0.text|escapejs }}" style="margin-left:1em;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.3em 1em;cursor:pointer;">Accept Now</button>
+      <button id="accept-first-challenge-btn" data-challenge-desc="{{ challenges.0.text|escapejs }}" style="margin-left:1em;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.3em 1em;cursor:pointer;">Start Challenge</button>
     {% endif %}
     and help your house win!
   </div>
@@ -107,21 +107,40 @@
 {# Challenges #}
 {% if challenges %}
   <h2 id="challenges">House Challenges</h2>
-  <ul>
+  <ul style="list-style:none;padding-left:0;">
     {% for challenge in challenges %}
-      <li>
-        {{ challenge.text }}
-        {% if challenge.is_completed %}
-          <span style="color:green;">✔️</span>
-        {% elif challenge.is_accepted %}
-          <span style="color:orange;">(Accepted)</span>
-        {% else %}
-          <button class="accept-challenge-btn" data-challenge-desc="{{ challenge.text|escapejs }}" style="margin-left:0.7em;background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;font-size:0.95em;">Accept</button>
-        {% endif %}
+      <li style="margin-bottom:1.2em;">
+        <div style="display:flex;align-items:center;gap:1em;">
+          <span>{{ challenge.text }}</span>
+          <div style="flex:1;max-width:180px;">
+            <div class="challenge-progress-bar" style="background:#e0e7ef;height:8px;border-radius:4px;overflow:hidden;width:100%;">
+              <div class="challenge-progress-fill" data-status="{% if challenge.is_completed %}completed{% elif challenge.is_accepted %}in_progress{% else %}not_started{% endif %}" style="height:100%;width:{% if challenge.is_completed %}100{% elif challenge.is_accepted %}50{% else %}0{% endif %}%;background:linear-gradient(90deg,#4fc3f7,#81d4fa);transition:width 1s;"></div>
+            </div>
+          </div>
+          {% if challenge.is_completed %}
+            <span style="color:green;font-weight:bold;">Completed ✔️</span>
+          {% elif challenge.is_accepted %}
+            <button class="complete-challenge-btn" data-challenge-desc="{{ challenge.text|escapejs }}" style="background:#43a047;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;font-size:0.95em;">Complete Challenge</button>
+          {% else %}
+            <button class="start-challenge-btn" data-challenge-desc="{{ challenge.text|escapejs }}" style="background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;font-size:0.95em;">Start Challenge</button>
+          {% endif %}
+        </div>
       </li>
     {% endfor %}
   </ul>
 {% endif %}
+
+<!-- Latest Activity Feed -->
+<div id="latest-activity-feed" style="margin-top:2em;">
+  <h3>Latest House Activity</h3>
+  <ul id="activity-feed-list" style="list-style:none;padding-left:0;"></ul>
+</div>
+
+<!-- Challenge completion confirmation -->
+<div id="challenge-complete-popup" style="display:none;position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);background:#43a047;color:#fff;padding:2em 2.5em;border-radius:16px;box-shadow:0 4px 24px #0002;font-size:1.3em;z-index:9999;text-align:center;">
+  <div style="font-size:2.5em;">🎉</div>
+  <div id="challenge-complete-message">Challenge completed!</div>
+</div>
 
 {# Badges #}
 {% if badges %}
@@ -221,8 +240,8 @@ if (acceptBtn) {
   });
 }
 
-// Accept any challenge button logic
-Array.from(document.getElementsByClassName('accept-challenge-btn')).forEach(function(btn) {
+// Start challenge button logic (for all unaccepted challenges)
+Array.from(document.getElementsByClassName('start-challenge-btn')).forEach(function(btn) {
   btn.addEventListener('click', function() {
     const desc = btn.getAttribute('data-challenge-desc');
     fetch('/accept-challenge/', {
@@ -238,15 +257,89 @@ Array.from(document.getElementsByClassName('accept-challenge-btn')).forEach(func
       if (data.success || data.message === 'Challenge accepted!') {
         window.location.reload();
       } else {
-        alert(data.error || 'Could not accept challenge.');
+        alert(data.error || 'Could not start challenge.');
       }
     });
   });
 });
 
+// Complete challenge button logic (manual completion)
+Array.from(document.getElementsByClassName('complete-challenge-btn')).forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const desc = btn.getAttribute('data-challenge-desc');
+    fetch('/complete-challenge/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ description: desc, xp: 10 })
+    })
+    .then(r => r.json())
+    .then(data => {
+      console.log('Complete challenge response:', data);
+      if (data.status === 'completed' || (data.message && data.message.toLowerCase().includes('completed'))) {
+        showChallengeCompletePopup('Challenge completed!');
+        setTimeout(() => { window.location.reload(); }, 1800);
+      } else if (data.error) {
+        alert(data.error || 'Could not complete challenge.');
+      } else {
+        alert('Unexpected response. See console for details.');
+        console.log(data);
+      }
+    })
+    .catch(err => {
+      alert('Network or server error. See console for details.');
+      console.error('Fetch error:', err);
+    });
+  });
+});
+
+// Show challenge complete popup/animation
+function showChallengeCompletePopup(msg) {
+  const popup = document.getElementById('challenge-complete-popup');
+  document.getElementById('challenge-complete-message').textContent = msg;
+  popup.style.display = 'block';
+  setTimeout(() => { popup.style.display = 'none'; }, 1500);
+}
+
+// Animate challenge progress bars
+window.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.challenge-progress-fill').forEach(function(bar) {
+    let status = bar.getAttribute('data-status');
+    let target = 0;
+    if (status === 'completed') target = 100;
+    else if (status === 'in_progress') target = 50;
+    else target = 0;
+    setTimeout(function() {
+      bar.style.width = target + '%';
+    }, 200);
+  });
+});
+
+// Fetch and display latest activity feed
+function loadActivityFeed() {
+  fetch('/activity-feed/')
+    .then(r => r.json())
+    .then(data => {
+      const list = document.getElementById('activity-feed-list');
+      list.innerHTML = '';
+      if (data.feed && data.feed.length > 0) {
+        data.feed.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span style='color:#1976d2;font-weight:bold;'>${item.user}</span> ${item.action} <span style='color:#333;'>${item.description}</span> <span style='color:#888;font-size:0.95em;'>${new Date(item.created_at).toLocaleString()}</span>`;
+          list.appendChild(li);
+        });
+      } else {
+        list.innerHTML = '<li style="color:#888;">No recent activity yet.</li>';
+      }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   updateHouseDetail();
   checkHouseBadges();
+  loadActivityFeed();
 });
 </script>
 {% endblock %}

@@ -93,17 +93,22 @@
         <a href="/leaderboard">Leaderboard</a>
         <a href="#">House Stats</a>
         {% if user.is_authenticated %}
-        <span id="friends-btn" style="cursor:pointer;margin-left:1em;" title="Friends">
+        <a href="/friends/" id="friends-btn" style="cursor:pointer;margin-left:1em;" title="Friends">
             <span style="font-size:1.3em;vertical-align:middle;">🤝</span>
             <span style="font-size:1em;">Friends</span>
-        </span>
-        <span id="teams-btn" style="cursor:pointer;margin-left:1em;" title="Teams">
+        </a>
+        <a href="/teams/" id="teams-btn" style="cursor:pointer;margin-left:1em;" title="Teams">
             <span style="font-size:1.3em;vertical-align:middle;">👥</span>
             <span style="font-size:1em;">Teams</span>
-        </span>
+        </a>
+        <a href="/activity-feed/" id="activity-feed-btn" style="cursor:pointer;margin-left:1em;" title="Activity Feed">
+            <span style="font-size:1.3em;vertical-align:middle;">📰</span>
+            <span style="font-size:1em;">Feed</span>
+        </a>
         <span id="notification-bell" style="cursor:pointer;position:relative;" title="Notifications">
             <span style="font-size:1.5em;">🔔</span>
             <span id="notif-count" style="position:absolute;top:-6px;right:-6px;background:#ff5252;color:#fff;border-radius:50%;font-size:0.8em;padding:2px 6px;display:none;">0</span>
+            <div id="notif-dropdown" style="display:none;position:absolute;right:0;top:2em;background:#fff;border:1px solid #1976d2;border-radius:8px;box-shadow:0 2px 12px #0002;min-width:260px;z-index:1000;padding:0.7em 0.5em 0.7em 0.5em;"></div>
         </span>
         <span id="profile-btn" style="cursor:pointer;margin-left:1em;" title="Profile">
             <span id="profile-avatar" style="font-size:1.3em;vertical-align:middle;">👤</span>
@@ -302,6 +307,38 @@
             octocoachInput.value = '';
         }
     };
+    // Notifications dropdown logic
+    const notifBell = document.getElementById('notification-bell');
+    const notifDropdown = document.getElementById('notif-dropdown');
+    const notifCount = document.getElementById('notif-count');
+    function fetchNotifications() {
+      fetch('/api/notifications/')
+        .then(r => r.json())
+        .then(data => {
+          if (data.notifications && data.notifications.length > 0) {
+            notifCount.style.display = 'inline-block';
+            notifCount.textContent = data.notifications.length;
+            notifDropdown.innerHTML = data.notifications.map(n => `<div style='padding:0.5em 0;border-bottom:1px solid #e3f7fc;'><span style='font-size:1.1em;'>🔔</span> ${n.message}<br><span style='font-size:0.85em;color:#888;'>${new Date(n.created_at).toLocaleString()}</span></div>`).join('');
+          } else {
+            notifCount.style.display = 'none';
+            notifDropdown.innerHTML = '<div style="padding:0.7em;color:#888;">No new notifications.</div>';
+          }
+        });
+    }
+    if (notifBell) {
+      notifBell.onclick = function(e) {
+        e.stopPropagation();
+        if (notifDropdown.style.display === 'block') {
+          notifDropdown.style.display = 'none';
+        } else {
+          fetchNotifications();
+          notifDropdown.style.display = 'block';
+        }
+      };
+      document.body.addEventListener('click', function() {
+        notifDropdown.style.display = 'none';
+      });
+    }
     // Auto-open OctoCoach and send onboarding message if needed
     document.addEventListener('DOMContentLoaded', function() {
       if (!{{ user.is_authenticated|yesno:'true,false' }}) {

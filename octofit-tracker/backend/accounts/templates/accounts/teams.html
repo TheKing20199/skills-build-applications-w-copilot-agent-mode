@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Teams | OctoFit{% endblock %}
+{% block content %}
+<h1 style="margin-top:1em;">👥 Your Teams</h1>
+<div style="margin-bottom:2em;">
+  {% if user_teams %}
+    <ul style="list-style:none;padding:0;">
+      {% for team in user_teams %}
+        <li style="margin-bottom:0.7em;font-size:1.1em;">
+          <span style="font-size:1.3em;">🏆</span> <b>{{ team.name }}</b>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>You are not in any teams yet. Join or create one below!</p>
+  {% endif %}
+</div>
+<h2>Join a Team</h2>
+<div style="margin-bottom:2em;">
+  {% if all_teams %}
+    <ul style="list-style:none;padding:0;">
+      {% for team in all_teams %}
+        <li style="margin-bottom:0.5em;">
+          <span style="font-size:1.2em;">🏆</span> <b>{{ team.name }}</b>
+          <button class="join-team-btn" data-team-id="{{ team.id }}" style="background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;">Join</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No teams to join right now. Create one!</p>
+  {% endif %}
+</div>
+<h2>Create a Team</h2>
+<form id="create-team-form" style="margin-bottom:2em;">
+  <input type="text" id="new-team-name" placeholder="Team name" required style="padding:0.4em 1em;border-radius:6px;border:1px solid #ccc;">
+  <button type="submit" style="background:#43a047;color:#fff;border:none;border-radius:5px;padding:0.3em 1em;cursor:pointer;">Create</button>
+</form>
+<script>
+// Join team
+Array.from(document.getElementsByClassName('join-team-btn')).forEach(function(btn) {
+  btn.onclick = function() {
+    fetch('/api/teams/join/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ team_id: btn.getAttribute('data-team-id') })
+    }).then(r => r.json()).then(data => { window.location.reload(); });
+  };
+});
+// Create team
+const createForm = document.getElementById('create-team-form');
+if (createForm) {
+  createForm.onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('new-team-name').value.trim();
+    if (!name) return;
+    fetch('/api/teams/create/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ name })
+    }).then(r => r.json()).then(data => { window.location.reload(); });
+  };
+}
+</script>
+{% endblock %}

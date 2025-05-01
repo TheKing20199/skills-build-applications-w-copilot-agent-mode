@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Friends & Social | OctoFit{% endblock %}
+{% block content %}
+<h1 style="margin-top:1em;">🤝 Your Friends</h1>
+<div style="margin-bottom:2em;">
+  {% if friends %}
+    <ul style="list-style:none;padding:0;">
+      {% for friend in friends %}
+        <li style="margin-bottom:0.7em;font-size:1.1em;">
+          <span style="font-size:1.3em;">👤</span> <b>{{ friend.username }}</b>
+          {% if most_active and friend.id == most_active.id %}<span style="color:#43a047;font-weight:bold;">🌟 Most Active!</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>You have no friends yet. Start connecting below!</p>
+  {% endif %}
+</div>
+<h2>Pending Friend Requests</h2>
+<div style="margin-bottom:2em;">
+  {% if incoming_requests %}
+    <ul style="list-style:none;padding:0;">
+      {% for req in incoming_requests %}
+        <li style="margin-bottom:0.5em;">
+          <b>{{ req.from_user.username }}</b> wants to connect!
+          <button class="accept-friend-btn" data-req-id="{{ req.id }}" style="background:#43a047;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;">Accept</button>
+          <button class="decline-friend-btn" data-req-id="{{ req.id }}" style="background:#ff5252;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;">Decline</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No incoming requests.</p>
+  {% endif %}
+</div>
+<h2>Suggested Friends</h2>
+<div style="margin-bottom:2em;">
+  {% if suggested_users %}
+    <ul style="list-style:none;padding:0;">
+      {% for user in suggested_users %}
+        <li style="margin-bottom:0.5em;">
+          <span style="font-size:1.2em;">👤</span> <b>{{ user.username }}</b>
+          <button class="send-friend-btn" data-user-id="{{ user.id }}" style="background:#1976d2;color:#fff;border:none;border-radius:5px;padding:0.2em 0.8em;cursor:pointer;">Add Friend</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No suggestions right now. Invite your classmates!</p>
+  {% endif %}
+</div>
+<h2>Outgoing Friend Requests</h2>
+<div style="margin-bottom:2em;">
+  {% if outgoing_requests %}
+    <ul style="list-style:none;padding:0;">
+      {% for req in outgoing_requests %}
+        <li style="margin-bottom:0.5em;">
+          <b>{{ req.to_user.username }}</b> (Pending)
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No outgoing requests.</p>
+  {% endif %}
+</div>
+<script>
+// Accept/decline friend requests
+Array.from(document.getElementsByClassName('accept-friend-btn')).forEach(function(btn) {
+  btn.onclick = function() {
+    fetch('/respond_friend_request/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ request_id: btn.getAttribute('data-req-id'), action: 'accept' })
+    }).then(r => r.json()).then(data => { window.location.reload(); });
+  };
+});
+Array.from(document.getElementsByClassName('decline-friend-btn')).forEach(function(btn) {
+  btn.onclick = function() {
+    fetch('/respond_friend_request/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ request_id: btn.getAttribute('data-req-id'), action: 'decline' })
+    }).then(r => r.json()).then(data => { window.location.reload(); });
+  };
+});
+// Send friend requests
+Array.from(document.getElementsByClassName('send-friend-btn')).forEach(function(btn) {
+  btn.onclick = function() {
+    fetch('/api/friends/send/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ to_user_id: btn.getAttribute('data-user-id') })
+    }).then(r => r.json()).then(data => { window.location.reload(); });
+  };
+});
+</script>
+{% endblock %}

@@ -5,7 +5,26 @@
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
+    <div class="form-group">
+      <label for="email-reminders-toggle">Email Reminders</label>
+      <input type="checkbox" id="email-reminders-toggle" {% if user.userprofile.email_reminders %}checked{% endif %}>
+      <span style="font-size:0.95em;color:#888;">Get reminders to log activities and keep your streak!</span>
+    </div>
     <button type="submit" class="btn btn-primary">Save Changes</button>
   </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggle = document.getElementById('email-reminders-toggle');
+  if (toggle) {
+    toggle.addEventListener('change', function() {
+      fetch('/api/user-profile/update/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ email_reminders: toggle.checked })
+      });
+    });
+  }
+});
+</script>
 {% endblock %}

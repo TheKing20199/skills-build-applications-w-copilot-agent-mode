@@ -200,6 +200,68 @@ This will print a summary of accessibility issues for each page. Use the output 
 
 ---
 
+## 🎬 Demo Video & Screenshots
+
+- [Watch the Demo Video](#) <!-- Replace # with your actual video link -->
+- Screenshots:
+  - ![OctoFit Dashboard](docs/octofitapp-small.png)
+  - Add more screenshots as needed to showcase onboarding, social features, and AI agent.
+
+---
+
+## 👥 Team & Credits
+
+- **Youssef Elmaraghy** – Lead Developer, AI/Agent Design, UI/UX
+- [Add more team members or acknowledgments here]
+- Special thanks to Microsoft Reactor, OpenAI, and the hackathon community for inspiration and support.
+
+---
+
+## 🗺️ Architecture Diagram
+
+See [docs/octofitapp-small.png](docs/octofitapp-small.png) for a high-level architecture overview.
+
+- Django backend (fitness, accounts, admin)
+- OpenAI API integration (OctoCoach agent, daily tips)
+- Social & gamification modules (friends, teams, comments, reactions)
+- Frontend: Responsive, accessible templates
+- Admin: Django admin for all content
+
+---
+
+## 🤝 Responsible AI & Human-in-the-Loop
+
+- All AI/agent features are opt-in and provide clear, friendly feedback.
+- Users can opt in/out of email reminders and notifications.
+- No personal data is shared with third parties; all data is stored securely.
+- Admins/teachers can monitor and moderate user activity via the admin panel.
+- Accessibility and inclusivity are core design principles.
+
+---
+
+## 🧑‍💻 Manual Test Instructions: Social Features
+
+1. Open two browser windows (or incognito sessions).
+2. Log in as two different users.
+3. Use the Friends page to send and accept friend requests.
+4. Join or create teams and verify team membership.
+5. Post comments and reactions in the Activity Feed.
+6. Check notifications and email reminders (if enabled).
+7. Try all features on both desktop and mobile for best results.
+
+---
+
+## 🏆 Category Alignment
+
+This project is submitted for:
+- **Best Agent in Python** (Django + OpenAI agent at the core)
+- **Best Overall Agent** (if eligible)
+- **Best Azure AI Agent Service Usage** (if Azure AI is used, update here)
+
+OctoFit showcases advanced agent orchestration, social engagement, and real-world impact using Python and Microsoft technologies.
+
+---
+
 ## 📈 SEO & Evaluator Highlights
 - **AI-powered, agent-driven, and gamified fitness platform for schools.**
 - **Admin-editable, real-time, and accessible by design.**

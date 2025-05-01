@@ -224,6 +224,13 @@ def submit_activity(request):
             if user_profile.house:
                 user_profile.house.points += 10
                 user_profile.house.save()
+            # Create ActivityFeedItem for activity log
+            ActivityFeedItem.objects.create(
+                user=request.user,
+                action='logged a fitness activity',
+                description=f"{activity.activity_type} for {activity.duration_minutes} min",
+                house=user_profile.house
+            )
             # Prepare updated progress
             from django.utils import timezone
             from datetime import timedelta
@@ -231,7 +238,6 @@ def submit_activity(request):
             workouts_this_week = FitnessActivity.objects.filter(user=request.user, date__gte=start_of_week).count()
             streak = calculate_streak(request.user)
             house_points = user_profile.house.points if user_profile.house else 0
-            # AJAX: return JSON for frontend update
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
@@ -240,13 +246,103 @@ def submit_activity(request):
                     'streak': streak,
                     'house_points': house_points
                 })
-            # Fallback: render page
             recommendations = recommend_workout(activity.user)
             feedback = generate_coachbot_feedback(activity.user)
             return render(request, 'submit_activity.html', {'form': form, 'recommendations': recommendations, 'feedback': feedback})
     else:
         form = FitnessActivityForm()
     return render(request, 'submit_activity.html', {'form': form})
+
+@csrf_exempt
+def accept_challenge(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'You must be logged in to accept a challenge.'}, status=401)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        description = data.get('description')
+        xp = int(data.get('xp', 10))
+        obj, created = AcceptedChallenge.objects.get_or_create(
+            user=request.user,
+            challenge_description=description,
+            defaults={'xp_points': xp}
+        )
+        user_profile = UserProfile.objects.get(user=request.user)
+        # Create feed item if just accepted
+        if created:
+            ActivityFeedItem.objects.create(
+                user=request.user,
+                action='started a challenge',
+                description=description,
+                house=user_profile.house
+            )
+        # Status logic
+        status = 'in_progress' if not obj.completed_at else 'completed'
+        if not created and obj.completed_at:
+            status = 'completed'
+        elif not created:
+            status = 'in_progress'
+        elif created:
+            status = 'in_progress'
+        # Fetch challenges from DB
+        house = user_profile.house
+        if house:
+            challenges = list(house.challenges.values_list('description', flat=True))
+        else:
+            challenges = []
+        accepted = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges).values_list('challenge_description', flat=True))
+        completed = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges, completed_at__isnull=False).values_list('challenge_description', flat=True))
+        return JsonResponse({
+            'message': 'Challenge accepted!' if created else 'Already accepted',
+            'accepted': accepted,
+            'completed': completed,
+            'total': len(challenges),
+            'done': len(completed),
+            'xp': xp,
+            'status': status
+        })
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+@login_required
+def complete_challenge(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    data = json.loads(request.body)
+    description = data.get('description')
+    xp = int(data.get('xp', 10))
+    challenge = AcceptedChallenge.objects.filter(user=request.user, challenge_description=description, completed_at__isnull=True).first()
+    if not challenge:
+        return JsonResponse({'error': 'Challenge not found or already completed.'}, status=404)
+    challenge.completed_at = now()
+    challenge.xp_points = xp
+    challenge.save()
+    # Create feed item for challenge completion
+    user_profile = UserProfile.objects.get(user=request.user)
+    ActivityFeedItem.objects.create(
+        user=request.user,
+        action='completed a challenge',
+        description=description,
+        house=user_profile.house
+    )
+    check_and_award_badges(request.user)
+    from .models import check_and_award_rewards
+    check_and_award_rewards(request.user)
+    house = user_profile.house
+    if house:
+        challenges = list(house.challenges.values_list('description', flat=True))
+    else:
+        challenges = []
+    accepted = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges).values_list('challenge_description', flat=True))
+    completed = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges, completed_at__isnull=False).values_list('challenge_description', flat=True))
+    return JsonResponse({
+        'message': 'Challenge completed! XP awarded.',
+        'accepted': accepted,
+        'completed': completed,
+        'total': len(challenges),
+        'done': len(completed),
+        'xp': xp,
+        'status': 'completed'
+    })
 
 @login_required
 def octocoach_response(request):
@@ -299,77 +395,6 @@ def octocoach_response(request):
         except Exception as e:
             logger.error(f"Error in octocoach_response: {str(e)}")
             return JsonResponse({"error": "Oops! Something went wrong 🤖"}, status=500)
-
-@csrf_exempt
-def accept_challenge(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'You must be logged in to accept a challenge.'}, status=401)
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        description = data.get('description')
-        xp = int(data.get('xp', 10))
-        # Prevent duplicate acceptances
-        obj, created = AcceptedChallenge.objects.get_or_create(
-            user=request.user,
-            challenge_description=description,
-            defaults={'xp_points': xp}
-        )
-        if not created:
-            return JsonResponse({'message': 'Already accepted', 'accepted': True})
-        # Fetch challenges from DB
-        house = request.user.userprofile.house
-        if house:
-            challenges = list(house.challenges.values_list('description', flat=True))
-        else:
-            challenges = []
-        accepted = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges).values_list('challenge_description', flat=True))
-        completed = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges, completed_at__isnull=False).values_list('challenge_description', flat=True))
-        return JsonResponse({
-            'message': 'Challenge accepted!',
-            'accepted': accepted,
-            'completed': completed,
-            'total': len(challenges),
-            'done': len(completed),
-            'xp': xp
-        })
-    return JsonResponse({'error': 'Invalid request'}, status=400)
-
-@csrf_exempt
-@login_required
-def complete_challenge(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request method.'}, status=405)
-    data = json.loads(request.body)
-    description = data.get('description')
-    xp = int(data.get('xp', 10))
-    challenge = AcceptedChallenge.objects.filter(user=request.user, challenge_description=description, completed_at__isnull=True).first()
-    if not challenge:
-        return JsonResponse({'error': 'Challenge not found or already completed.'}, status=404)
-    challenge.completed_at = now()
-    challenge.xp_points = xp  # Optionally update XP if needed
-    challenge.save()
-    # Optionally, add XP to user profile or house points here
-    # Award badges after challenge completion
-    check_and_award_badges(request.user)
-    # Award rewards after challenge completion
-    from .models import check_and_award_rewards
-    check_and_award_rewards(request.user)
-    # Fetch challenges from DB
-    house = request.user.userprofile.house
-    if house:
-        challenges = list(house.challenges.values_list('description', flat=True))
-    else:
-        challenges = []
-    accepted = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges).values_list('challenge_description', flat=True))
-    completed = list(AcceptedChallenge.objects.filter(user=request.user, challenge_description__in=challenges, completed_at__isnull=False).values_list('challenge_description', flat=True))
-    return JsonResponse({
-        'message': 'Challenge completed! XP awarded.',
-        'accepted': accepted,
-        'completed': completed,
-        'total': len(challenges),
-        'done': len(completed),
-        'xp': xp
-    })
 
 @csrf_exempt
 def ask_coachbot(request):
@@ -591,6 +616,10 @@ def activity_feed(request):
     return JsonResponse({'feed': items})
 
 @login_required
+def activity_feed_page(request):
+    return render(request, 'accounts/activity_feed.html')
+
+@login_required
 @require_GET
 def notifications_api(request):
     notifs = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')[:20]
@@ -740,6 +769,19 @@ def list_teams(request):
     return JsonResponse({'teams': data})
 
 @login_required
+def teams(request):
+    user = request.user
+    # User's teams
+    memberships = TeamMembership.objects.filter(user=user).select_related('team')
+    user_teams = [m.team for m in memberships]
+    # All teams (for joining)
+    all_teams = Team.objects.exclude(id__in=[t.id for t in user_teams])[:10]
+    return render(request, 'accounts/teams.html', {
+        'user_teams': user_teams,
+        'all_teams': all_teams,
+    })
+
+@login_required
 @require_POST
 @csrf_exempt
 def post_comment(request):
@@ -859,4 +901,33 @@ def join_house(request):
 
 def fitness_home(request):
     return HttpResponse("<h2>Fitness Home</h2><p>Welcome to the fitness section. Try /submit-activity/ or /accept-challenge/.</p>")
+
+@login_required
+def friends(request):
+    user = request.user
+    from .models import UserProfile, Friendship, FriendRequest
+    # Get all friends
+    friends = Friendship.objects.filter(models.Q(user1=user) | models.Q(user2=user))
+    friend_ids = [f.user2.id if f.user1 == user else f.user1.id for f in friends]
+    friend_users = User.objects.filter(id__in=friend_ids)
+    # Incoming friend requests
+    incoming_requests = FriendRequest.objects.filter(to_user=user, status='pending')
+    # Outgoing friend requests
+    outgoing_requests = FriendRequest.objects.filter(from_user=user, status='pending')
+    # Suggest new friends (users not already friends, not self, not requested)
+    all_user_ids = set(User.objects.exclude(id=user.id).values_list('id', flat=True))
+    suggested_ids = all_user_ids - set(friend_ids) - set(outgoing_requests.values_list('to_user_id', flat=True))
+    suggested_users = User.objects.filter(id__in=suggested_ids)[:5]
+    # Fun stat: most active friend
+    from fitness.models import FitnessActivity
+    most_active = None
+    if friend_users:
+        most_active = max(friend_users, key=lambda u: FitnessActivity.objects.filter(user=u).count())
+    return render(request, 'accounts/friends.html', {
+        'friends': friend_users,
+        'incoming_requests': incoming_requests,
+        'outgoing_requests': outgoing_requests,
+        'suggested_users': suggested_users,
+        'most_active': most_active,
+    })
 

@@ -18,13 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
 from fitness.views import (
     octofit_home, house_detail, submit_activity, leaderboard, octocoach_response, accept_challenge, ask_coachbot, upload_progress_photo, list_progress_photos, daily_tip, save_onboarding,
     activity_feed, notifications_api, mark_notifications_read, user_profile_api, update_profile_api, analytics_api,
     send_friend_request, respond_friend_request, list_friends,
     create_team, join_team, list_teams,
     post_comment, list_comments, post_reaction, list_reactions,
-    push_notification_poll, join_house, user_progress_api
+    push_notification_poll, join_house, user_progress_api, friends, teams, activity_feed_page
 )
 from accounts.views import register
 
@@ -65,6 +66,10 @@ urlpatterns = [
     path('user_profile_api/', user_profile_api, name='user_profile_api'),
     path("accounts/", include("accounts.urls")),  # Ensure accounts app URLs are included
     path('fitness/', include('fitness.urls')),
+    path("friends/", friends, name="friends"),
+    path("teams/", teams, name="teams"),
+    path("activity-feed/", activity_feed_page, name="activity_feed_page"),
+    path("send_friend_request/", lambda request: redirect('/api/friends/send/'), name="send_friend_request"),
 ]
 
 if settings.DEBUG:
